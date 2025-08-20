@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Settings:
     LLM_SERVER_URL: str = os.getenv("LLM_SERVER_URL", "http://localhost:8000")
