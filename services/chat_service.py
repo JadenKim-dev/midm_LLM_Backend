@@ -56,15 +56,12 @@ class ChatService:
     ) -> ChatResponse:
         """채팅 요청 처리 (일반)"""
         
-        # 세션 존재 확인
         session = await session_service.get_session(session_id)
         if not session:
             raise ValueError(f"Session {session_id} not found")
         
-        # 사용자 메시지 저장
         await self.save_message(session_id, "user", user_message)
         
-        # 컨텍스트 메시지 조회
         context_messages = await session_service.get_recent_messages_for_context(session_id)
         
         # 시스템 메시지 추가 (첫 번째가 아닌 경우)
@@ -75,7 +72,6 @@ class ChatService:
             }
             context_messages.insert(0, system_message)
         
-        # 기본값 설정
         if max_new_tokens is None:
             max_new_tokens = settings.DEFAULT_MAX_TOKENS
         if temperature is None:
@@ -83,7 +79,6 @@ class ChatService:
         if do_sample is None:
             do_sample = True
         
-        # LLM 서버에 요청
         llm_response = await llm_client.chat_completion(
             messages=context_messages,
             max_new_tokens=max_new_tokens,
@@ -91,7 +86,6 @@ class ChatService:
             do_sample=do_sample
         )
         
-        # 어시스턴트 응답 저장
         assistant_message = await self.save_message(
             session_id=session_id,
             role="assistant",
