@@ -140,9 +140,14 @@ class ChatService:
         
         # 응답 수집을 위한 변수
         full_response = ""
-        message_id = str(uuid.uuid4())
+        token_count = 0
         
         try:
+            yield {
+                "type": "start",
+                "message": "Stream started"
+            }
+            
             # LLM 서버로부터 스트림 수신
             async for chunk in llm_client.chat_stream(
                 messages=context_messages,
@@ -150,14 +155,32 @@ class ChatService:
                 temperature=temperature,
                 do_sample=do_sample
             ):
-                # 클라이언트에게 청크 전달
-                yield chunk
-                
-                # 응답 내용 수집
+                # 청크 타입별 처리
                 if chunk.get("type") == "chunk":
-                    full_response = chunk.get("accumulated", "")
+                    token_content = chunk.get("content", "")
+                    full_response += token_content
+                    token_count += 1
+                    
+                    # 개별 토큰 전송
+                    yield {
+                        "type": "token",
+                        "content": token_content,
+                        "token_count": token_count
+                    }
+                    
                 elif chunk.get("type") == "complete":
-                    full_response = chunk.get("full_response", "")
+                    final_response = chunk.get("full_response", full_response)
+                    if final_response and final_response != full_response:
+                        full_response = final_response
+                    
+                    yield {
+                        "type": "complete",
+                        "total_tokens": token_count
+                    }
+                    
+                elif chunk.get("type") == "error":
+                    yield chunk
+                    return
             
             # 완전한 응답을 데이터베이스에 저장
             if full_response:
