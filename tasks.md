@@ -8,20 +8,20 @@
 - [x] **환경 설정**: requirements.txt, config.py, .env 파일 생성
 
 ### Phase 2: 코어 서비스 구현
-- [ ] **데이터베이스 연결**: SQLite 연결 및 테이블 생성 로직 구현
-- [ ] **LLM 클라이언트**: midm_LLM_serving 서버와 통신하는 클라이언트 구현
-- [ ] **세션 서비스**: 세션 생성/조회/삭제 로직 구현
-- [ ] **채팅 서비스**: 메시지 저장 및 컨텍스트 관리 로직 구현
+- [x] **데이터베이스 연결**: SQLite 연결 및 테이블 생성 로직 구현
+- [x] **LLM 클라이언트**: midm_LLM_serving 서버와 통신하는 클라이언트 구현
+- [x] **세션 서비스**: 세션 생성/조회/삭제 로직 구현
+- [x] **채팅 서비스**: 메시지 저장 및 컨텍스트 관리 로직 구현
 
 ### Phase 3: API 엔드포인트 구현
-- [ ] **세션 API**: POST /api/sessions, GET /api/sessions/{id}, DELETE /api/sessions/{id}
-- [ ] **채팅 API**: POST /api/chat (일반 응답)
-- [ ] **스트리밍 API**: POST /api/chat/stream (SSE 기반)
-- [ ] **히스토리 API**: GET /api/sessions/{id}/messages
-- [ ] **헬스체크 API**: GET /api/health
+- [x] **세션 API**: POST /api/sessions, GET /api/sessions/{id}, DELETE /api/sessions/{id}
+- [x] **채팅 API**: POST /api/chat (일반 응답)
+- [x] **스트리밍 API**: POST /api/chat/stream (SSE 기반)
+- [x] **히스토리 API**: GET /api/sessions/{id}/messages
+- [x] **헬스체크 API**: GET /api/health
 
 ### Phase 4: 통합 및 테스트
-- [ ] **메인 앱 구성**: FastAPI 앱 엔트리포인트 및 라우터 등록
+- [x] **메인 앱 구성**: FastAPI 앱 엔트리포인트 및 라우터 등록
 - [ ] **통합 테스트**: LLM 서버와의 연동 테스트
 - [ ] **문서화 완료**: 전체 계획 및 구현 완료 상태 업데이트
 
