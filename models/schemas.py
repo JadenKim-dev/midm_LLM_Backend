@@ -33,6 +33,8 @@ class ChatRequest(BaseModel):
     max_new_tokens: Optional[int] = Field(256, description="최대 생성 토큰 수")
     temperature: Optional[float] = Field(0.7, description="응답 생성 온도")
     do_sample: Optional[bool] = Field(True, description="샘플링 사용 여부")
+    use_rag: Optional[bool] = Field(False, description="RAG 기능 사용 여부")
+    top_k: Optional[int] = Field(None, description="RAG 검색 시 반환할 문서 수")
 
 class ChatResponse(BaseModel):
     message_id: str = Field(..., description="메시지 ID") 
