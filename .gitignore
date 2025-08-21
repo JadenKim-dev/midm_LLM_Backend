@@ -198,3 +198,6 @@ docker-compose.override.yml
 # Application specific
 uploads/
 static/media/
+
+*.bin
+*.pickle
