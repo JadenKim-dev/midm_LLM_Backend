@@ -103,7 +103,7 @@ class SessionService:
                 token_usage=json.loads(row[5]) if row[5] else None
             ))
 
-        return messages
+        return messages[::-1]
 
     async def get_recent_messages_for_context(self, session_id: str, limit: int = None) -> List[Dict[str, str]]:
         """LLM 컨텍스트용 최근 메시지 조회"""
@@ -114,7 +114,6 @@ class SessionService:
         if not messages:
             return []
 
-        messages.reverse()
         context_messages = []
         for msg in messages:
             context_messages.append({
