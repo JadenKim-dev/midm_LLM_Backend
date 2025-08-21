@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from models.database import db_manager
-from api import sessions, chat, health
+from api import sessions, chat, health, documents
 from config import settings
 
 @asynccontextmanager
@@ -45,6 +45,7 @@ app.add_middleware(
 app.include_router(sessions.router)
 app.include_router(chat.router)
 app.include_router(health.router)
+app.include_router(documents.router)
 
 # 루트 엔드포인트
 @app.get("/")
@@ -64,6 +65,12 @@ async def root():
             "chat": {
                 "completion": "POST /api/chat",
                 "stream": "POST /api/chat/stream"
+            },
+            "documents": {
+                "upload": "POST /api/documents/upload",
+                "list": "GET /api/documents?session_id={session_id}", 
+                "delete": "DELETE /api/documents/{document_id}",
+                "chunks": "GET /api/documents/{document_id}/chunks"
             },
             "health": "GET /api/health",
             "docs": "/docs"
