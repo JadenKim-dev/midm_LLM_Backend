@@ -37,8 +37,32 @@ class DatabaseManager:
                 FOREIGN KEY (session_id) REFERENCES sessions (session_id) ON DELETE CASCADE
             );
             
+            CREATE TABLE IF NOT EXISTS documents (
+                document_id TEXT PRIMARY KEY,
+                session_id TEXT,
+                title TEXT,
+                content TEXT,
+                file_type TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                metadata TEXT DEFAULT '{}',
+                FOREIGN KEY (session_id) REFERENCES sessions (session_id) ON DELETE CASCADE
+            );
+            
+            CREATE TABLE IF NOT EXISTS document_chunks (
+                chunk_id TEXT PRIMARY KEY,
+                document_id TEXT,
+                chunk_index INTEGER,
+                content TEXT,
+                embedding_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (document_id) REFERENCES documents (document_id) ON DELETE CASCADE
+            );
+            
             CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages(session_id);
             CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+            CREATE INDEX IF NOT EXISTS idx_documents_session_id ON documents(session_id);
+            CREATE INDEX IF NOT EXISTS idx_document_chunks_document_id ON document_chunks(document_id);
+            CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding_id ON document_chunks(embedding_id);
         """)
         await self._connection.commit()
     

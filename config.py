@@ -14,5 +14,11 @@ class Settings:
     PORT: int = int(os.getenv("PORT", "8080"))
     DEBUG: bool = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
     CORS_ORIGINS: list = os.getenv("CORS_ORIGINS", "*").split(",")
+    
+    CHROMA_PERSIST_DIR: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+    DEFAULT_CHUNK_SIZE: int = int(os.getenv("DEFAULT_CHUNK_SIZE", "500"))
+    DEFAULT_CHUNK_OVERLAP: int = int(os.getenv("DEFAULT_CHUNK_OVERLAP", "50"))
+    DEFAULT_TOP_K: int = int(os.getenv("DEFAULT_TOP_K", "3"))
+    MIN_SIMILARITY_SCORE: float = float(os.getenv("MIN_SIMILARITY_SCORE", "0.7"))
 
 settings = Settings()
