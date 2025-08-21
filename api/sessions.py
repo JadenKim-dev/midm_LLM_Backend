@@ -5,7 +5,7 @@ from services.session_service import session_service
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
-@router.post("/", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
 async def create_session(session_data: Optional[SessionCreate] = None):
     """새 세션 생성"""
     try:

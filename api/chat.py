@@ -6,7 +6,7 @@ import json
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
-@router.post("/", response_model=ChatResponse)
+@router.post("", response_model=ChatResponse)
 async def chat_completion(request: ChatRequest):
     """일반 채팅 완성 요청"""
     try:
