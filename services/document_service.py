@@ -1,5 +1,6 @@
 import uuid
 import json
+import io
 from datetime import datetime
 from typing import List, Dict, Tuple
 from pathlib import Path
@@ -34,7 +35,13 @@ class DocumentService:
         elif file_ext == '.docx':
             text = self._extract_docx_text(file_content)
         elif file_ext == '.txt':
-            text = file_content.decode('utf-8')
+            try:
+                text = file_content.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    text = file_content.decode('euc-kr')
+                except UnicodeDecodeError:
+                    text = file_content.decode('cp949')
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
         
@@ -64,8 +71,6 @@ class DocumentService:
         return document_id, chunk_data
     
     def _extract_pdf_text(self, file_content: bytes) -> str:
-        import io
-        
         pdf_file = io.BytesIO(file_content)
         pdf_reader = pypdf.PdfReader(pdf_file)
         
@@ -76,8 +81,6 @@ class DocumentService:
         return text.strip()
     
     def _extract_docx_text(self, file_content: bytes) -> str:
-        import io
-        
         docx_file = io.BytesIO(file_content)
         document = Document(docx_file)
         

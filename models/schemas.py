@@ -36,12 +36,19 @@ class ChatRequest(BaseModel):
     use_rag: Optional[bool] = Field(False, description="RAG 기능 사용 여부")
     top_k: Optional[int] = Field(None, description="RAG 검색 시 반환할 문서 수")
 
+class RagContext(BaseModel):
+    document_id: str = Field(..., description="문서 ID")
+    document_title: str = Field(..., description="문서 제목")
+    chunk_content: str = Field(..., description="사용된 청크 내용")
+    similarity_score: float = Field(..., description="유사도 점수")
+
 class ChatResponse(BaseModel):
     message_id: str = Field(..., description="메시지 ID") 
     role: str = Field("assistant", description="응답 역할")
     content: str = Field(..., description="응답 내용")
     created_at: datetime = Field(..., description="생성 시간")
     token_usage: Optional[Dict[str, Any]] = Field(None, description="토큰 사용량 정보")
+    rag_context: Optional[List[RagContext]] = Field(None, description="RAG에서 사용된 문서 컨텍스트")
 
 class MessagesHistoryResponse(BaseModel):
     session_id: str = Field(..., description="세션 ID")

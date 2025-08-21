@@ -81,8 +81,9 @@ class ChatService:
             do_sample = True
         
         rag_context = None
+        rag_metadata = []
         if use_rag:
-            rag_context = await rag_service.prepare_context(
+            rag_context, rag_metadata = await rag_service.prepare_context(
                 query=user_message,
                 session_id=session_id,
                 top_k=top_k
@@ -109,7 +110,8 @@ class ChatService:
             role="assistant",
             content=llm_response["response"],
             created_at=assistant_message.created_at,
-            token_usage=llm_response.get("usage")
+            token_usage=llm_response.get("usage"),
+            rag_context=rag_metadata if use_rag and rag_metadata else None
         )
     
     async def process_chat_stream(
@@ -147,8 +149,9 @@ class ChatService:
             do_sample = True
         
         rag_context = None
+        rag_metadata = []
         if use_rag:
-            rag_context = await rag_service.prepare_context(
+            rag_context, rag_metadata = await rag_service.prepare_context(
                 query=user_message,
                 session_id=session_id,
                 top_k=top_k
@@ -189,7 +192,8 @@ class ChatService:
                     
                     yield {
                         "type": "complete",
-                        "total_tokens": token_count
+                        "total_tokens": token_count,
+                        "rag_context": rag_metadata if use_rag and rag_metadata else None
                     }
                     
                 elif chunk.get("type") == "error":
