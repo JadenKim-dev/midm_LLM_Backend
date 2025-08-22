@@ -86,6 +86,8 @@ class PresentationListResponse(BaseModel):
 class AnalysisRequest(BaseModel):
     session_id: str = Field(..., description="세션 ID")
     topic: str = Field(..., description="분석할 주제")
+    use_rag: Optional[bool] = Field(False, description="RAG 기능 사용 여부")
+    top_k: Optional[int] = Field(5, description="RAG 검색 시 반환할 문서 수")
 
 class AnalysisResponse(BaseModel):
     analysis_id: str = Field(..., description="분석 ID")

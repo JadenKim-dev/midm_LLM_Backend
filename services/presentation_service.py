@@ -9,10 +9,12 @@ from models.schemas import (
     AnalysisRequest, AnalysisResponse, ConversionRequest, ConversionResponse
 )
 from services.llm_client import llm_client
+from services.rag_service import RAGService
 
 
 class PresentationService:
     def __init__(self):
+        self.rag_service = RAGService()
         self.analysis_prompt_template = """
 당신은 전문적인 주제 분석 전문가입니다. 주어진 주제에 대해 상세하고 체계적인 분석을 제공해주세요.
 
@@ -51,7 +53,12 @@ class PresentationService:
             }
             
             content = ""
-            async for chunk in self._analyze_topic_stream(request.topic):
+            async for chunk in self._analyze_topic_stream(
+                topic=request.topic,
+                session_id=request.session_id,
+                use_rag=request.use_rag or False,
+                top_k=request.top_k or 5
+            ):
                 if chunk.get("type") == "chunk":
                     content += chunk.get("content", "")
                     yield {
@@ -474,7 +481,13 @@ class PresentationService:
         )
 
     # 새로운 헬퍼 메서드들
-    async def _analyze_topic_stream(self, topic: str) -> AsyncGenerator[Dict, None]:
+    async def _analyze_topic_stream(
+        self, 
+        topic: str, 
+        session_id: str = None,
+        use_rag: bool = False,
+        top_k: int = 5
+    ) -> AsyncGenerator[Dict, None]:
         """주제 분석 (스트리밍)"""
         messages = [
             {
@@ -487,11 +500,32 @@ class PresentationService:
             }
         ]
         
+        context = None
+        if use_rag and session_id:
+            try:
+                # RAG 문서 검색
+                documents, similarities, metadatas = await self.rag_service.search_relevant_documents(
+                    query=topic,
+                    session_id=session_id,
+                    top_k=top_k
+                )
+                
+                if documents:
+                    context = documents
+                    # 시스템 메시지에 RAG 컨텍스트 정보 추가
+                    context_info = "\n\n관련 문서 내용:\n" + "\n---\n".join(documents)
+                    messages[1]["content"] += context_info
+            except Exception as e:
+                print(f"RAG 검색 오류: {e}")
+                # RAG 실패해도 일반 분석은 계속 진행
+        
         async for chunk in llm_client.chat_stream(
             messages=messages,
             max_new_tokens=2048,
             temperature=0.7,
-            do_sample=True
+            do_sample=True,
+            context=context,
+            use_rag_prompt=use_rag
         ):
             yield chunk
 
