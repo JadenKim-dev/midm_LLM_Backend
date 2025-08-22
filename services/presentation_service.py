@@ -1,3 +1,4 @@
+import re
 import uuid
 import json
 from typing import List, Optional, AsyncGenerator, Dict
@@ -28,50 +29,6 @@ class PresentationService:
 """
 
 
-        self.marp_conversion_prompt = """
-다음 발표 내용을 전문적인 Marp 형식의 마크다운으로 변환해주세요.
-
-발표 내용:
-{content}
-
-**Marp 변환 규칙:**
-
-1. **헤더 설정:**
-   ```markdown
-   ---
-   marp: true
-   theme: default
-   paginate: true
-   backgroundColor: #fff
-   ---
-   ```
-
-2. **슬라이드 구성:**
-   - 첫 번째 슬라이드: 타이틀 슬라이드 (중앙 정렬)
-   - 두 번째 슬라이드: 목차/개요
-   - 각 주요 섹션마다 새로운 슬라이드
-   - 내용이 많은 섹션은 2-3개 슬라이드로 분할
-
-3. **마크다운 문법:**
-   - 슬라이드 구분: `---`
-   - 제목: `# Title` (메인 제목), `## Subtitle` (소제목)
-   - 불릿 포인트: `- 내용` 또는 `1. 내용`
-   - 강조: **굵게**, *기울임*
-   - 중앙 정렬: `<!-- fit -->`를 제목에 추가
-
-4. **시각적 요소:**
-   - 각 슬라이드에 적절한 제목
-   - 내용을 3-5개 불릿 포인트로 구성
-   - 중요한 키워드는 **강조 표시**
-   - 숫자나 통계는 눈에 띄게 표시
-
-5. **슬라이드 분량:**
-   - 한 슬라이드당 3-7줄 내용
-   - 텍스트가 많으면 여러 슬라이드로 분할
-   - 마지막 슬라이드: 감사 인사 및 Q&A
-
-완성된 Marp 마크다운만 출력해주세요. 추가 설명이나 주석은 포함하지 마세요.
-"""
 
     async def analyze_topic_stream(self, request: AnalysisRequest) -> AsyncGenerator[Dict, None]:
         """주제 분석 (스트리밍)"""
@@ -135,7 +92,7 @@ class PresentationService:
             yield {
                 "type": "complete",
                 "message": "주제 분석이 완료되었습니다!",
-                "analysis": analysis.dict(mode='json') if analysis else None
+                "analysis": analysis.model_dump(mode='json') if analysis else None
             }
             
         except Exception as e:
@@ -222,7 +179,7 @@ class PresentationService:
             yield {
                 "type": "complete",
                 "message": "발표자료 변환이 완료되었습니다!",
-                "presentation": presentation.dict(mode='json') if presentation else None
+                "presentation": presentation.model_dump(mode='json') if presentation else None
             }
             
         except Exception as e:
@@ -235,25 +192,189 @@ class PresentationService:
 
 
     async def _convert_to_marp_stream(self, content: str) -> AsyncGenerator[Dict, None]:
-        """상세 내용을 Marp 형식으로 변환 (스트리밍)"""
-        messages = [
-            {
-                "role": "system",
-                "content": "당신은 Marp 마크다운 변환 전문가입니다."
-            },
-            {
-                "role": "user",
-                "content": self.marp_conversion_prompt.format(content=content)
+        """상세 내용을 Marp 형식으로 변환 (직접 변환)"""
+        # 직접 Marp 변환 로직 실행
+        marp_content = self._convert_to_marp_direct(content)
+        
+        # 변환된 내용을 청크 단위로 전송
+        chunk_size = 100  # 적당한 청크 크기
+        for i in range(0, len(marp_content), chunk_size):
+            chunk = marp_content[i:i+chunk_size]
+            yield {
+                "type": "chunk",
+                "content": chunk
             }
+        
+        # 완료 신호
+        yield {
+            "type": "complete"
+        }
+
+    def _convert_to_marp_direct(self, content: str) -> str:
+        """분석 내용을 직접 Marp 형식으로 변환"""
+        
+        lines = content.split('\n')
+        
+        # Marp 헤더
+        marp_content = [
+            "---",
+            "marp: true",
+            "theme: default",
+            "paginate: true",
+            "backgroundColor: #fff",
+            "---",
+            ""
         ]
         
-        async for chunk in llm_client.chat_stream(
-            messages=messages,
-            max_new_tokens=2048,
-            temperature=0.3,
-            do_sample=True
-        ):
-            yield chunk
+        # 제목 추출 (첫 번째 섹션이나 주제에서)
+        title = self._extract_title(content)
+        
+        # 타이틀 슬라이드
+        marp_content.extend([
+            f"# {title} <!-- fit -->",
+            "",
+            "## 발표자료",
+            f"**생성일: {datetime.now().strftime('%Y-%m-%d')}**",
+            "",
+            "---",
+            ""
+        ])
+        
+        # 섹션 파싱 및 슬라이드 생성
+        sections = self._parse_sections(content)
+        
+        # 목차 슬라이드
+        if len(sections) > 1:
+            marp_content.extend([
+                "## 목차",
+                ""
+            ])
+            for i, section in enumerate(sections, 1):
+                marp_content.append(f"{i}. **{section['title']}**")
+            marp_content.extend(["", "---", ""])
+        
+        # 각 섹션을 슬라이드로 변환
+        for section in sections:
+            slides = self._section_to_slides(section)
+            marp_content.extend(slides)
+        
+        return '\n'.join(marp_content)
+
+    def _extract_title(self, content: str) -> str:
+        """내용에서 제목 추출"""
+        lines = content.split('\n')
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('-') and not line.startswith('*'):
+                # 마크다운 헤더 제거
+                title = re.sub(r'^#+\s*', '', line)
+                # 볼드 마크다운 제거
+                title = re.sub(r'\*\*(.*?)\*\*', r'\1', title)
+                if len(title) > 5:  # 너무 짧은 제목 제외
+                    return title[:50]  # 제목 길이 제한
+        return "발표자료"
+
+    def _parse_sections(self, content: str) -> list:
+        """내용을 섹션별로 파싱"""
+        
+        sections = []
+        current_section = None
+        
+        lines = content.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # 섹션 제목 감지 (**, ##, ###, 1., 2. 등)
+            section_match = re.match(r'^(\*\*([^*]+)\*\*|#{1,3}\s*([^#]+)|(\d+)\.\s*\*\*([^*]+)\*\*)', line)
+            
+            if section_match:
+                # 이전 섹션 저장
+                if current_section and current_section['content']:
+                    sections.append(current_section)
+                
+                # 새 섹션 시작
+                title = section_match.group(2) or section_match.group(3) or section_match.group(5)
+                if title:
+                    title = title.strip()
+                    current_section = {
+                        'title': title,
+                        'content': []
+                    }
+            else:
+                # 현재 섹션에 내용 추가
+                if current_section is not None:
+                    current_section['content'].append(line)
+        
+        # 마지막 섹션 저장
+        if current_section and current_section['content']:
+            sections.append(current_section)
+        
+        return sections
+
+    def _section_to_slides(self, section: dict) -> list:
+        """섹션을 슬라이드로 변환"""
+        slides = []
+        title = section['title']
+        content_lines = section['content']
+        
+        # 내용을 슬라이드 단위로 분할 (최대 4-5줄)
+        max_lines_per_slide = 4
+        
+        if len(content_lines) <= max_lines_per_slide:
+            # 한 슬라이드로 충분
+            slides.extend([
+                f"## {title}",
+                ""
+            ])
+            for line in content_lines:
+                formatted_line = self._format_line(line)
+                if formatted_line:
+                    slides.append(formatted_line)
+            slides.extend(["", "---", ""])
+        else:
+            # 여러 슬라이드로 분할
+            chunks = [content_lines[i:i+max_lines_per_slide] 
+                     for i in range(0, len(content_lines), max_lines_per_slide)]
+            
+            for i, chunk in enumerate(chunks, 1):
+                if len(chunks) > 1:
+                    slides.append(f"## {title} ({i}/{len(chunks)})")
+                else:
+                    slides.append(f"## {title}")
+                slides.append("")
+                
+                for line in chunk:
+                    formatted_line = self._format_line(line)
+                    if formatted_line:
+                        slides.append(formatted_line)
+                slides.extend(["", "---", ""])
+        
+        return slides
+
+    def _format_line(self, line: str) -> str:
+        """라인을 Marp 형식으로 포맷팅"""
+        
+        line = line.strip()
+        if not line:
+            return ""
+        
+        # 이미 불릿 포인트면 그대로
+        if line.startswith('- ') or line.startswith('* '):
+            return line
+        
+        # 번호 목록을 불릿 포인트로 변환
+        if re.match(r'^\d+\.\s', line):
+            pattern = r'^\d+\.\s*'
+            return f"- {re.sub(pattern, '', line)}"
+        
+        # 일반 텍스트를 불릿 포인트로 변환
+        if len(line) > 10:  # 너무 짧은 내용 제외
+            return f"- {line}"
+        
+        return line
 
 
     async def _save_presentation(

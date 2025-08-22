@@ -3,8 +3,17 @@ from fastapi.responses import StreamingResponse
 from models.schemas import ChatRequest, ChatResponse
 from services.chat_service import chat_service
 import json
+from datetime import datetime
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder to handle datetime objects"""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 @router.post("", response_model=ChatResponse)
 async def chat_completion(request: ChatRequest):
@@ -43,7 +52,7 @@ async def chat_stream(request: ChatRequest):
                 use_rag=request.use_rag,
                 top_k=request.top_k
             ):
-                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+                yield f"data: {json.dumps(chunk, ensure_ascii=False, cls=DateTimeEncoder)}\n\n"
             
             yield "data: [DONE]\n\n"
             

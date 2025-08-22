@@ -6,8 +6,17 @@ from models.schemas import (
 )
 from services.presentation_service import presentation_service
 import json
+from datetime import datetime
 
 router = APIRouter()
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder to handle datetime objects"""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 
@@ -37,7 +46,7 @@ async def analyze_topic_stream(request: AnalysisRequest):
         async def stream_generator():
             async for chunk in presentation_service.analyze_topic_stream(request):
                 # SSE 형식으로 데이터 전송
-                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+                yield f"data: {json.dumps(chunk, ensure_ascii=False, cls=DateTimeEncoder)}\n\n"
         
         return StreamingResponse(
             stream_generator(),
@@ -60,7 +69,7 @@ async def convert_to_presentation_stream(request: ConversionRequest):
         async def stream_generator():
             async for chunk in presentation_service.convert_to_presentation_stream(request):
                 # SSE 형식으로 데이터 전송
-                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+                yield f"data: {json.dumps(chunk, ensure_ascii=False, cls=DateTimeEncoder)}\n\n"
         
         return StreamingResponse(
             stream_generator(),
