@@ -294,8 +294,8 @@ class PresentationService:
             if not line:
                 continue
             
-            # 섹션 제목 감지 (**, ##, ###, 1., 2. 등)
-            section_match = re.match(r'^(\*\*([^*]+)\*\*|#{1,3}\s*([^#]+)|(\d+)\.\s*\*\*([^*]+)\*\*)', line)
+            # 섹션 제목 감지 (##, ### 만)
+            section_match = re.match(r'^#{2,3}\s*([^#]+)', line)
             
             if section_match:
                 # 이전 섹션 저장
@@ -303,7 +303,7 @@ class PresentationService:
                     sections.append(current_section)
                 
                 # 새 섹션 시작
-                title = section_match.group(2) or section_match.group(3) or section_match.group(5)
+                title = section_match.group(1)
                 if title:
                     title = title.strip()
                     current_section = {
