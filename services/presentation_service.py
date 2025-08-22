@@ -501,6 +501,7 @@ class PresentationService:
         ]
         
         context = None
+        reference_docs = []
         if use_rag and session_id:
             try:
                 # RAG 문서 검색
@@ -515,10 +516,28 @@ class PresentationService:
                     # 시스템 메시지에 RAG 컨텍스트 정보 추가
                     context_info = "\n\n관련 문서 내용:\n" + "\n---\n".join(documents)
                     messages[1]["content"] += context_info
+                    
+                    # 참조 문서 정보 수집
+                    for i, (doc, similarity, metadata) in enumerate(zip(documents, similarities, metadatas)):
+                        reference_docs.append({
+                            "document_id": metadata.get("document_id", f"doc_{i}"),
+                            "document_title": metadata.get("title", f"문서 {i+1}"),
+                            "chunk_content": doc[:200] + "..." if len(doc) > 200 else doc,
+                            "similarity_score": float(similarity),
+                            "chunk_id": metadata.get("chunk_id"),
+                            "chunk_index": metadata.get("chunk_index")
+                        })
             except Exception as e:
                 print(f"RAG 검색 오류: {e}")
                 # RAG 실패해도 일반 분석은 계속 진행
         
+        # 참조 문서 정보를 먼저 전송
+        if reference_docs:
+            yield {
+                "type": "reference_documents",
+                "reference_documents": reference_docs
+            }
+
         async for chunk in llm_client.chat_stream(
             messages=messages,
             max_new_tokens=2048,
