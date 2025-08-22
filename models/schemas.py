@@ -60,3 +60,52 @@ class HealthResponse(BaseModel):
     timestamp: datetime = Field(..., description="상태 확인 시간")
     llm_server_available: bool = Field(..., description="LLM 서버 연결 상태")
     database_connected: bool = Field(..., description="데이터베이스 연결 상태")
+
+class PresentationCreate(BaseModel):
+    session_id: str = Field(..., description="세션 ID")
+    topic: str = Field(..., description="발표 주제")
+    theme: Optional[str] = Field("default", description="Marp 테마")
+
+class PresentationResponse(BaseModel):
+    presentation_id: str = Field(..., description="발표자료 ID")
+    session_id: str = Field(..., description="세션 ID")
+    title: str = Field(..., description="발표자료 제목")
+    topic: str = Field(..., description="발표 주제")
+    content: str = Field(..., description="상세 내용")
+    marp_content: str = Field(..., description="Marp 형식 마크다운")
+    theme: str = Field(..., description="Marp 테마")
+    created_at: datetime = Field(..., description="생성 시간")
+    updated_at: datetime = Field(..., description="수정 시간")
+
+class PresentationListResponse(BaseModel):
+    session_id: str = Field(..., description="세션 ID")
+    presentations: List[PresentationResponse] = Field(..., description="발표자료 목록")
+    total_count: int = Field(..., description="전체 발표자료 수")
+
+# 분석 관련 스키마
+class AnalysisRequest(BaseModel):
+    session_id: str = Field(..., description="세션 ID")
+    topic: str = Field(..., description="분석할 주제")
+
+class AnalysisResponse(BaseModel):
+    analysis_id: str = Field(..., description="분석 ID")
+    session_id: str = Field(..., description="세션 ID")
+    topic: str = Field(..., description="분석 주제")
+    content: str = Field(..., description="분석 내용")
+    created_at: datetime = Field(..., description="생성 시간")
+
+# PPT 변환 관련 스키마
+class ConversionRequest(BaseModel):
+    analysis_id: str = Field(..., description="분석 ID")
+    theme: Optional[str] = Field("default", description="Marp 테마")
+
+class ConversionResponse(BaseModel):
+    presentation_id: str = Field(..., description="발표자료 ID")
+    analysis_id: str = Field(..., description="분석 ID")
+    session_id: str = Field(..., description="세션 ID")
+    title: str = Field(..., description="발표자료 제목")
+    topic: str = Field(..., description="발표 주제")
+    content: str = Field(..., description="원본 분석 내용")
+    marp_content: str = Field(..., description="Marp 형식 마크다운")
+    theme: str = Field(..., description="Marp 테마")
+    created_at: datetime = Field(..., description="생성 시간")

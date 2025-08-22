@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from models.database import db_manager
-from api import sessions, chat, health, documents
+from api import sessions, chat, health, documents, presentations
 from config import settings
 
 @asynccontextmanager
@@ -46,6 +46,7 @@ app.include_router(sessions.router)
 app.include_router(chat.router)
 app.include_router(health.router)
 app.include_router(documents.router)
+app.include_router(presentations.router, prefix="/api/presentation")
 
 # 루트 엔드포인트
 @app.get("/")
@@ -71,6 +72,13 @@ async def root():
                 "list": "GET /api/documents?session_id={session_id}", 
                 "delete": "DELETE /api/documents/{document_id}",
                 "chunks": "GET /api/documents/{document_id}/chunks"
+            },
+            "presentations": {
+                "analyze": "POST /api/presentation/analyze (주제 분석 SSE 스트리밍)",
+                "convert": "POST /api/presentation/convert (PPT 변환 SSE 스트리밍)",
+                "get": "GET /api/presentation/{presentation_id}",
+                "get_analysis": "GET /api/presentation/analysis/{analysis_id}",
+                "list": "GET /api/presentation/list/{session_id}"
             },
             "health": "GET /api/health",
             "docs": "/docs"
