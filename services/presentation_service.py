@@ -229,6 +229,8 @@ class PresentationService:
             "theme: default",
             "paginate: true",
             "backgroundColor: #fff",
+            "header: <span></span><img src=\"images/goorm_logo.png\" style=\"width: 80px; height: auto;\" />",
+            "footer: <img src=\"images/KT_Logo.svg\" style=\"width: 25px; height: auto;\" />",
             "---",
             ""
         ]
